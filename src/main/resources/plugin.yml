@@ -1,11 +1,11 @@
 name: MiraLoaders
-version: 0.2.0
+version: 0.2.1
 main: com.mira.loaders.MiraLoadersPlugin
 api-version: '1.21'
 authors: [FiveS]
-description: Paid physical full-simulation chunk loaders for the Mira plugin ecosystem.
+description: Paid physical full-column chunk loaders for the Mira plugin ecosystem.
 depend: [Vault]
-softdepend: [MiraSpawners, MiraCore]
+softdepend: [MiraSpawners]
 
 commands:
   miraloader:
