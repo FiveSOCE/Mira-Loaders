@@ -5,7 +5,6 @@ import com.mira.loaders.MiraLoadersPlugin;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -26,17 +25,17 @@ public final class LoaderService {
 
     private final MiraLoadersPlugin plugin;
     private final Economy economy;
+    private final SimulationAnchorService simulation;
     private final NamespacedKey loaderItemKey;
-    private final NamespacedKey loaderIdKey;
     private final File dataFile;
     private final Map<UUID, LoaderRecord> records = new LinkedHashMap<>();
     private final Set<UUID> ticketed = new HashSet<>();
 
-    public LoaderService(MiraLoadersPlugin plugin, Economy economy) {
+    public LoaderService(MiraLoadersPlugin plugin, Economy economy, SimulationAnchorService simulation) {
         this.plugin = plugin;
         this.economy = economy;
+        this.simulation = simulation;
         this.loaderItemKey = new NamespacedKey(plugin, "chunk_loader_item");
-        this.loaderIdKey = new NamespacedKey(plugin, "chunk_loader_id");
         this.dataFile = new File(plugin.getDataFolder(), "loaders.yml");
     }
 
@@ -73,7 +72,8 @@ public final class LoaderService {
     }
 
     public void shutdown() {
-        for (LoaderRecord record : records.values()) removeTicket(record);
+        simulation.shutdown();
+        for (LoaderRecord record : records.values()) removeChunkTicketOnly(record);
         save();
     }
 
@@ -144,14 +144,14 @@ public final class LoaderService {
 
         LoaderRecord updated = record.withExpiresAt(base + HOUR_MILLIS);
         records.put(updated.id(), updated);
-        ensureTicket(updated);
+        ensureActive(updated);
         save();
         plugin.send(player, "&aAdded &e1 hour &ato this loader for &f$" + formatMoney(cost) + "&a.");
         return true;
     }
 
     public ItemStack remove(Player player, LoaderRecord record) {
-        removeTicket(record);
+        deactivate(record);
         records.remove(record.id());
         save();
         return createLoaderItem(1);
@@ -171,20 +171,23 @@ public final class LoaderService {
 
     public void tick() {
         long now = System.currentTimeMillis();
+        boolean changed = false;
         for (LoaderRecord record : new ArrayList<>(records.values())) {
             World world = Bukkit.getWorld(record.worldId());
             if (world == null) continue;
 
             Block block = world.getBlockAt(record.x(), record.y(), record.z());
             if (block.getType() != Material.BEACON) {
-                removeTicket(record);
+                deactivate(record);
                 records.remove(record.id());
+                changed = true;
                 continue;
             }
 
-            if (record.active(now)) ensureTicket(record);
-            else removeTicket(record);
+            if (record.active(now)) ensureActive(record);
+            else deactivate(record);
         }
+        if (changed) save();
     }
 
     private void reconcileAll() {
@@ -199,20 +202,31 @@ public final class LoaderService {
                 changed = true;
                 continue;
             }
-            if (record.active(now)) ensureTicket(record);
+            if (record.active(now)) ensureActive(record);
         }
         if (changed) save();
     }
 
-    private void ensureTicket(LoaderRecord record) {
-        if (ticketed.contains(record.id())) return;
+    private void ensureActive(LoaderRecord record) {
         World world = Bukkit.getWorld(record.worldId());
         if (world == null) return;
-        world.getChunkAt(record.chunkX(), record.chunkZ()).addPluginChunkTicket(plugin);
-        ticketed.add(record.id());
+
+        if (!ticketed.contains(record.id())) {
+            world.getChunkAt(record.chunkX(), record.chunkZ()).addPluginChunkTicket(plugin);
+            ticketed.add(record.id());
+        }
+
+        // A chunk ticket alone only prevents unload. The simulation anchor is what
+        // makes vanilla behave as though a real player is standing at the loader.
+        simulation.ensure(record);
     }
 
-    private void removeTicket(LoaderRecord record) {
+    private void deactivate(LoaderRecord record) {
+        simulation.remove(record);
+        removeChunkTicketOnly(record);
+    }
+
+    private void removeChunkTicketOnly(LoaderRecord record) {
         if (!ticketed.remove(record.id())) return;
         World world = Bukkit.getWorld(record.worldId());
         if (world == null) return;
