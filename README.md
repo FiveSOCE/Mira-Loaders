@@ -1,16 +1,16 @@
 # MiraLoaders
 
-Paid physical full-simulation chunk loaders for the Mira Paper server suite.
+Paid physical full-column chunk loaders for the Mira Paper server suite.
 
-MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, keeps the loader area running as though a real player were standing at the beacon. A normal Paper plugin chunk ticket is retained for residency, while v0.2.0 adds a hidden server-side player simulation anchor so vanilla player-dependent mechanics continue without a real player online nearby.
+MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, keeps its **entire containing chunk column** active from the world's minimum build height to maximum build height. v0.2.1 does this without synthetic or fake players.
 
 ## Current Release
 
-**v0.2.0** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
+**v0.2.1** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
 
 ## Download
 
-**[Download MiraLoaders v0.2.0](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.2.0/MiraLoaders-0.2.0.jar)**
+**[Download MiraLoaders v0.2.1](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.2.1/MiraLoaders-0.2.1.jar)**
 
 ## Requirements
 
@@ -19,7 +19,6 @@ MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, k
 - Vault
 - a Vault-compatible economy provider
 - MiraSpawners optional/recommended
-- MiraCore optional/recommended for synthetic-player join-message suppression
 
 ## Loader Item
 
@@ -27,42 +26,46 @@ The physical loader is a modified `BEACON` carrying MiraLoaders persistent item 
 
 Only administrators can create loaders through commands. Once issued, any player may place one.
 
-Default item presentation:
+Default behavior:
 
 - **Mira Chunk Loader**
-- keeps the containing chunk resident and maintains vanilla-style player simulation while fueled
+- entire `16 x world-height x 16` chunk column remains active while fueled
+- loader Y coordinate does not change the simulated vertical area
 - fuel cost: **$150,000 per hour**
 - maximum stored fuel: **12 hours**
 
 Normal Beacons are not treated as loaders.
 
-## Full Simulation
+## Full-Column Simulation
 
-A simple chunk ticket only prevents unloading. That is not enough for mechanics that explicitly require a player or player simulation source.
+v0.2.1 removes the v0.2.0 synthetic `ServerPlayer` implementation completely.
 
-While a Mira Chunk Loader has fuel, MiraLoaders now maintains both:
+While fueled, MiraLoaders now owns the chunk directly:
 
-1. a Paper plugin chunk ticket for the loader chunk
-2. a hidden server-side `ServerPlayer` simulation anchor pinned to the beacon position
+1. a Paper plugin chunk ticket keeps the chunk resident
+2. MiraLoaders additionally force-loads the same chunk while active
+3. the loader verifies the chunk reaches Paper's `ENTITY_TICKING` load level
+4. every entity physically inside that chunk is kept activated so Paper's player-distance entity activation optimisation cannot switch off AI/ticking vertically
+5. every Creature Spawner and Trial Spawner in the chunk has its player activation range temporarily removed while the loader is active
+6. original spawner ranges and force-load state are restored when the loader shuts down or is removed
 
-The synthetic player uses Minecraft's normal server player path with an in-memory connection. It is invisible, invulnerable, non-collidable, gravity-free, excluded from normal MiraCore join presentation, and hidden/unlisted from real players.
+This is chunk-column based, not distance-from-beacon based.
 
-This allows vanilla itself to continue mechanics that normally rely on a nearby player, including:
+A loader at bedrock and a loader at build height affect the same vertical column: the entire containing chunk from minimum world height to maximum world height.
 
-- redstone and scheduled block updates
-- hoppers and other block entities
-- furnaces and processing blocks
-- entity ticking and AI activation
-- random block ticks such as crop and plant growth
-- vanilla mob spawner player checks
-- natural spawning/player-proximity logic
-- MiraSpawners in the loaded simulation area
+Paper defines `ENTITY_TICKING` as the load level where all normal chunk game logic is processed. This covers the systems that belong to ticking chunks, including scheduled block updates, redstone, block entities, furnaces, hoppers and random block ticks used by crops/plants.
 
-The loader's Y coordinate does not define a vertical activation band. Minecraft chunks are full world-height columns, so the containing chunk remains available from the world's minimum build height to maximum build height.
+MiraLoaders additionally removes the player-distance gates that normally affect spawners and Paper entity activation inside the loaded chunk.
 
-The hidden simulation player is kept at the physical beacon position and uses the minimum simulation/view distance Paper permits in order to keep the surrounding simulation fringe as small as possible while still using real vanilla player mechanics.
+### No fake players
 
-When fuel expires, the synthetic player is retired and the plugin chunk ticket is removed immediately. The Beacon remains physically placed and can be refueled later.
+MiraLoaders does not create, register, hide or simulate a Minecraft player in v0.2.1.
+
+There is no fake account in the player list, no fake connection, no player Y-position and no player-shaped vertical activation radius.
+
+### Natural mob spawning
+
+Vanilla natural mob spawning is explicitly calculated around real players and mob caps. MiraLoaders does not create fake players and therefore does not fabricate a replacement natural-spawn player population. Physical/managed spawners, entity farms, redstone farms, crop farms, block entities and loaded entities are handled by the chunk-column system above.
 
 ## Fuel & GUI
 
@@ -83,23 +86,24 @@ Fuel behavior:
 - default maximum stored time = `12 hours`
 - expiry is stored as an absolute timestamp
 - restarting the server does not pause or reset fuel
-- active persisted loaders recreate their simulation anchors after restart
+- active persisted loaders re-establish their chunk simulation after restart
 
 By default only one Mira loader may exist in a chunk.
 
 ## Removal & Protection
 
-Tracked loaders cannot be broken normally and are excluded from explosion destruction. Piston movement involving a tracked loader is also cancelled so the persisted location cannot become desynchronised.
+Tracked loaders cannot be broken normally and are excluded from explosion destruction. Piston movement involving a tracked loader is cancelled so the persisted location cannot become desynchronised.
 
 The player who placed the loader can remove it through the GUI. Administrators with `miraloaders.admin` can also remove it.
 
 Removal:
 
-1. retires the synthetic simulation player
-2. removes the Paper chunk ticket
-3. removes the placed Beacon
-4. deletes the persisted loader record
-5. returns a physical Mira Chunk Loader item to the removing player
+1. restores any spawner activation ranges changed by MiraLoaders
+2. releases MiraLoaders' force-load marker
+3. removes the Paper plugin chunk ticket
+4. removes the placed Beacon
+5. deletes the persisted loader record
+6. returns a physical Mira Chunk Loader item to the removing player
 
 If the inventory is full, the returned loader is dropped safely at the player's location.
 
@@ -121,7 +125,7 @@ Aliases: `/miraloader`, `/loaders`.
 
 ## MiraSpawners Integration
 
-MiraSpawners already normalizes managed spawners to remove their normal 3D required-player range. With MiraLoaders v0.2.0, an active loader additionally supplies a real server-side player simulation source in the area, so both managed and vanilla player-dependent behavior can continue when no real player is present.
+MiraSpawners already normalizes managed spawners to remove their normal 3D required-player range. MiraLoaders v0.2.1 applies the same full-column activation principle to spawner block states in an active loader chunk, so vertical distance from the Beacon is irrelevant.
 
 ## Configuration
 
