@@ -3,8 +3,8 @@ package com.mira.loaders;
 import com.mira.loaders.command.LoaderCommand;
 import com.mira.loaders.gui.LoaderGui;
 import com.mira.loaders.listener.LoaderListener;
+import com.mira.loaders.service.ChunkColumnSimulationService;
 import com.mira.loaders.service.LoaderService;
-import com.mira.loaders.service.SimulationAnchorService;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
@@ -17,7 +17,7 @@ public final class MiraLoadersPlugin extends JavaPlugin {
     private Economy economy;
     private LoaderService loaderService;
     private LoaderGui loaderGui;
-    private SimulationAnchorService simulationAnchors;
+    private ChunkColumnSimulationService columnSimulation;
 
     @Override
     public void onEnable() {
@@ -31,13 +31,10 @@ public final class MiraLoadersPlugin extends JavaPlugin {
         }
 
         economy = registration.getProvider();
-        simulationAnchors = new SimulationAnchorService(this);
-        loaderService = new LoaderService(this, economy, simulationAnchors);
+        columnSimulation = new ChunkColumnSimulationService(this);
+        loaderService = new LoaderService(this, economy, columnSimulation);
         loaderGui = new LoaderGui(this, loaderService);
 
-        // Register synthetic-player suppression before loading persisted active
-        // loaders, because load() can immediately recreate their simulation anchors.
-        getServer().getPluginManager().registerEvents(simulationAnchors, this);
         getServer().getPluginManager().registerEvents(loaderGui, this);
         getServer().getPluginManager().registerEvents(new LoaderListener(this, loaderService, loaderGui), this);
 
@@ -51,13 +48,18 @@ public final class MiraLoadersPlugin extends JavaPlugin {
         pluginCommand.setExecutor(command);
         pluginCommand.setTabCompleter(command);
 
+        // The column simulator runs every tick so entity activation cannot fall
+        // back to Paper's player-distance optimisation between maintenance passes.
+        getServer().getScheduler().runTaskTimer(this, columnSimulation::tick, 1L, 1L);
+
+        // Persistence, fuel expiry and GUI refresh only need second-level cadence.
         getServer().getScheduler().runTaskTimer(this, () -> {
             loaderService.tick();
             loaderGui.refreshOpenGuis();
         }, 20L, 20L);
 
         getLogger().info("MiraLoaders v" + getPluginMeta().getVersion() + " enabled with "
-                + loaderService.loaderCount() + " tracked loader(s). Full player simulation is enabled for fueled loaders.");
+                + loaderService.loaderCount() + " tracked loader(s). Full chunk-column simulation is enabled; no fake players are used.");
     }
 
     @Override
