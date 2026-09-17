@@ -2,15 +2,15 @@
 
 Paid physical full-column chunk loaders for the Mira Paper server suite.
 
-MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, keeps its **entire containing chunk column** active from the world's minimum build height to maximum build height. v0.2.1 does this without synthetic or fake players.
+MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, keeps its **entire containing chunk column** active from the world's minimum build height to maximum build height. It does this without synthetic or fake players.
 
 ## Current Release
 
-**v0.2.1** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
+**v0.2.2** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
 
 ## Download
 
-**[Download MiraLoaders v0.2.1](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.2.1/MiraLoaders-0.2.1.jar)**
+**[Download MiraLoaders v0.2.2](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.2.2/MiraLoaders-0.2.2.jar)**
 
 ## Requirements
 
@@ -18,7 +18,7 @@ MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, k
 - Java 21 runtime for the production JAR
 - Vault
 - a Vault-compatible economy provider
-- MiraSpawners optional/recommended
+- MiraSpawners **v0.1.14+ recommended for managed/stacked Mira spawners**
 
 ## Loader Item
 
@@ -38,34 +38,46 @@ Normal Beacons are not treated as loaders.
 
 ## Full-Column Simulation
 
-v0.2.1 removes the v0.2.0 synthetic `ServerPlayer` implementation completely.
-
-While fueled, MiraLoaders now owns the chunk directly:
+While fueled, MiraLoaders owns the chunk directly:
 
 1. a Paper plugin chunk ticket keeps the chunk resident
-2. MiraLoaders additionally force-loads the same chunk while active
-3. the loader verifies the chunk reaches Paper's `ENTITY_TICKING` load level
-4. every entity physically inside that chunk is kept activated so Paper's player-distance entity activation optimisation cannot switch off AI/ticking vertically
-5. every Creature Spawner and Trial Spawner in the chunk has its player activation range temporarily removed while the loader is active
-6. original spawner ranges and force-load state are restored when the loader shuts down or is removed
+2. MiraLoaders force-loads the same chunk while active
+3. the loader verifies Paper's chunk load level and keeps enforcing simulation
+4. entities physically inside the chunk are kept activated so player-distance entity activation cannot switch them off vertically
+5. physical Creature Spawners are driven by MiraLoaders' own off-player spawn clock while the loader is fueled
+6. original spawner settings and force-load state are restored when the loader shuts down or is removed
 
-This is chunk-column based, not distance-from-beacon based.
+This is **chunk-column based**, not distance-from-beacon based.
 
 A loader at bedrock and a loader at build height affect the same vertical column: the entire containing chunk from minimum world height to maximum world height.
 
-Paper defines `ENTITY_TICKING` as the load level where all normal chunk game logic is processed. This covers the systems that belong to ticking chunks, including scheduled block updates, redstone, block entities, furnaces, hoppers and random block ticks used by crops/plants.
+### Spawners with no player nearby
 
-MiraLoaders additionally removes the player-distance gates that normally affect spawners and Paper entity activation inside the loaded chunk.
+Paper documents `requiredPlayerRange <= 0` as always active only while players are online. That is not sufficient for MiraLoaders.
+
+v0.2.2 therefore does not depend on vanilla player activation for fueled loader spawners. While a loader is active:
+
+- MiraLoaders temporarily suppresses the vanilla spawn attempt for each physical Creature Spawner in the chunk
+- MiraLoaders maintains that spawner's own delay, spawn count, spawn range and maximum-nearby limit
+- when the timer expires, it performs a real `SpawnReason.SPAWNER` spawn attempt
+- the source spawner coordinates are attached to the spawned entity before the spawn event fires
+- MiraSpawners v0.1.14+ consumes that source marker and applies the normal Mira stack multiplier, mob policy and managed-spawner safety rules
+
+This works even when **no real player is within range or no real players are online**.
+
+Both normal physical spawners and Mira-managed/stacked Creature Spawners are supported.
 
 ### No fake players
 
-MiraLoaders does not create, register, hide or simulate a Minecraft player in v0.2.1.
+MiraLoaders does not create, register, hide or simulate a Minecraft player.
 
-There is no fake account in the player list, no fake connection, no player Y-position and no player-shaped vertical activation radius.
+There is no fake account, fake connection, player Y-position or player-shaped vertical activation radius.
 
 ### Natural mob spawning
 
-Vanilla natural mob spawning is explicitly calculated around real players and mob caps. MiraLoaders does not create fake players and therefore does not fabricate a replacement natural-spawn player population. Physical/managed spawners, entity farms, redstone farms, crop farms, block entities and loaded entities are handled by the chunk-column system above.
+Vanilla natural mob spawning is explicitly calculated around real players and mob caps. MiraLoaders does not create fake players and therefore does not fabricate a replacement natural-spawn player population.
+
+Physical/managed spawners, entity farms, redstone farms, crop farms, block entities and loaded entities are handled by the chunk-column system above.
 
 ## Fuel & GUI
 
@@ -96,14 +108,7 @@ Tracked loaders cannot be broken normally and are excluded from explosion destru
 
 The player who placed the loader can remove it through the GUI. Administrators with `miraloaders.admin` can also remove it.
 
-Removal:
-
-1. restores any spawner activation ranges changed by MiraLoaders
-2. releases MiraLoaders' force-load marker
-3. removes the Paper plugin chunk ticket
-4. removes the placed Beacon
-5. deletes the persisted loader record
-6. returns a physical Mira Chunk Loader item to the removing player
+Removal restores loader-owned spawner settings, releases the force-load state and plugin ticket, removes the Beacon and persisted record, and returns a physical Mira Chunk Loader item.
 
 If the inventory is full, the returned loader is dropped safely at the player's location.
 
@@ -122,10 +127,6 @@ Aliases: `/miraloader`, `/loaders`.
 | Permission | Default | Purpose |
 | --- | --- | --- |
 | `miraloaders.admin` | OP | Gives loaders and bypasses loader ownership for removal. |
-
-## MiraSpawners Integration
-
-MiraSpawners already normalizes managed spawners to remove their normal 3D required-player range. MiraLoaders v0.2.1 applies the same full-column activation principle to spawner block states in an active loader chunk, so vertical distance from the Beacon is irrelevant.
 
 ## Configuration
 
