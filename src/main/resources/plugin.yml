@@ -1,0 +1,20 @@
+name: MiraLoaders
+version: 0.1.0
+main: com.mira.loaders.MiraLoadersPlugin
+api-version: '1.21'
+authors: [FiveS]
+description: Paid physical chunk loaders for the Mira plugin ecosystem.
+depend: [Vault]
+softdepend: [MiraSpawners]
+
+commands:
+  miraloader:
+    description: MiraLoaders administration.
+    usage: /miraloader <give|reload> [player] [amount]
+    aliases: [mloader, loaders]
+    permission: miraloaders.admin
+
+permissions:
+  miraloaders.admin:
+    description: Allows MiraLoaders administration and owner bypass.
+    default: op
