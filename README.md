@@ -6,7 +6,7 @@ MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, k
 
 ## Current Release
 
-**v0.1.0** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
+**v0.1.1** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
 
 ## Requirements
 
@@ -55,9 +55,9 @@ Fuel behavior:
 
 By default only one Mira loader may exist in a chunk.
 
-## Removal
+## Removal & Protection
 
-Tracked loaders cannot be broken normally.
+Tracked loaders cannot be broken normally and are excluded from explosion destruction. Piston movement involving a tracked loader is also cancelled so the persisted location cannot become desynchronised.
 
 The player who placed the loader can remove it through the GUI. Administrators with `miraloaders.admin` can also remove it.
 
