@@ -52,17 +52,17 @@ jobs:
       - run: gradle clean build -PpaperApiVersion=1.21.11-R0.1-SNAPSHOT -PcompileJavaVersion=21 -PbytecodeJavaVersion=21 --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: MiraLoaders-0.2.1
-          path: build/libs/MiraLoaders-0.2.1.jar
+          name: MiraLoaders-0.2.2
+          path: build/libs/MiraLoaders-0.2.2.jar
           if-no-files-found: error
       - name: Publish release
         if: success() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.2.1"; JAR="build/libs/MiraLoaders-0.2.1.jar"
+          TAG="v0.2.2"; JAR="build/libs/MiraLoaders-0.2.2.jar"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$JAR" --clobber
           else
-            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraLoaders v0.2.1" --notes "Removes synthetic/fake players and replaces them with full chunk-column simulation: plugin/force-loaded ticking, full-column entity activation, and player-range-free spawners from minimum world height to maximum world height."
+            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraLoaders v0.2.2" --notes "Fixes fueled loader spawners with no players nearby: MiraLoaders now owns the physical spawner clock while active, suppresses duplicate vanilla attempts, and emits marked SPAWNER-reason mobs for MiraSpawners integration across the full chunk height."
           fi
