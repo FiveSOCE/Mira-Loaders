@@ -33,6 +33,7 @@ public final class MiraLoadersPlugin extends JavaPlugin {
         loaderService.load();
         loaderGui = new LoaderGui(this, loaderService);
 
+        getServer().getPluginManager().registerEvents(loaderGui, this);
         getServer().getPluginManager().registerEvents(new LoaderListener(this, loaderService, loaderGui), this);
 
         LoaderCommand command = new LoaderCommand(this, loaderService);
