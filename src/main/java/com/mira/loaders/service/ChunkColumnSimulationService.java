@@ -6,10 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.CreatureSpawner;
-import org.bukkit.block.TrialSpawner;
 import org.bukkit.entity.Entity;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -25,31 +21,25 @@ import java.util.UUID;
 
 /**
  * Keeps fueled loader chunks operating as complete vertical simulation columns
- * without creating synthetic/fake players.
- *
- * Paper chunk tickets keep the chunk resident. MiraLoaders additionally keeps
- * the chunk force-loaded while fueled, normalizes player-gated spawners across
- * the entire column, and keeps entities inside the loader chunk activated so
- * Paper's entity-activation-range optimisation cannot turn off AI/ticking just
- * because no real player is nearby.
+ * without synthetic/fake players.
  */
 public final class ChunkColumnSimulationService {
     private final MiraLoadersPlugin plugin;
     private final NamespacedKey forcedByMiraKey;
     private final Map<UUID, LoaderRecord> active = new LinkedHashMap<>();
-    private final Map<SpawnerKey, Integer> originalSpawnerRanges = new HashMap<>();
     private final Set<UUID> warnedLoadLevel = new HashSet<>();
     private final Map<Class<?>, Method> getHandleMethods = new HashMap<>();
+    private final LoaderSpawnerDriver spawnerDriver;
 
     private Field minecraftCurrentTickField;
     private boolean activationReflectionResolved;
     private boolean activationReflectionUnavailable;
     private boolean pauseVoteApplied;
-    private int maintenanceTicks;
 
     public ChunkColumnSimulationService(MiraLoadersPlugin plugin) {
         this.plugin = plugin;
         this.forcedByMiraKey = new NamespacedKey(plugin, "forced_by_mira_loader");
+        this.spawnerDriver = new LoaderSpawnerDriver(plugin);
     }
 
     public void ensure(LoaderRecord record) {
@@ -58,23 +48,22 @@ public final class ChunkColumnSimulationService {
         if (chunk == null) return;
 
         ensureForceLoaded(chunk);
-        normalizeSpawners(record, chunk);
+        spawnerDriver.prepare(chunk);
         applyPauseVote(false);
     }
 
     public void remove(LoaderRecord record) {
         active.remove(record.id());
-        restoreSpawnerRanges(record);
+        Chunk chunk = chunk(record);
+        if (chunk != null) spawnerDriver.restore(chunk);
         releaseForceLoaded(record);
         warnedLoadLevel.remove(record.id());
         if (active.isEmpty()) applyPauseVote(true);
     }
 
     public void shutdown() {
-        for (LoaderRecord record : new ArrayList<>(active.values())) {
-            restoreSpawnerRanges(record);
-            releaseForceLoaded(record);
-        }
+        spawnerDriver.restoreAll();
+        for (LoaderRecord record : new ArrayList<>(active.values())) releaseForceLoaded(record);
         active.clear();
         warnedLoadLevel.clear();
         applyPauseVote(true);
@@ -92,15 +81,7 @@ public final class ChunkColumnSimulationService {
             ensureForceLoaded(chunk);
             verifyEntityTicking(record, chunk);
             activateChunkEntities(chunk, currentTick);
-        }
-
-        maintenanceTicks++;
-        if (maintenanceTicks >= 20) {
-            maintenanceTicks = 0;
-            for (LoaderRecord record : new ArrayList<>(active.values())) {
-                Chunk chunk = chunk(record);
-                if (chunk != null) normalizeSpawners(record, chunk);
-            }
+            spawnerDriver.tick(chunk);
         }
     }
 
@@ -135,45 +116,6 @@ public final class ChunkColumnSimulationService {
             plugin.getLogger().warning("Loader " + record.id() + " chunk " + record.chunkX() + "," + record.chunkZ()
                     + " is currently " + chunk.getLoadLevel() + " instead of ENTITY_TICKING; MiraLoaders will keep the"
                     + " ticket/force-load applied and continue enforcing column simulation.");
-        }
-    }
-
-    private void normalizeSpawners(LoaderRecord record, Chunk chunk) {
-        for (BlockState state : chunk.getTileEntities(false)) {
-            if (state instanceof CreatureSpawner spawner) {
-                normalizeSpawner(record, state.getBlock(), spawner.getRequiredPlayerRange(), spawner::setRequiredPlayerRange, state);
-            } else if (state instanceof TrialSpawner spawner) {
-                normalizeSpawner(record, state.getBlock(), spawner.getRequiredPlayerRange(), spawner::setRequiredPlayerRange, state);
-            }
-        }
-    }
-
-    private void normalizeSpawner(LoaderRecord record, Block block, int currentRange,
-                                  java.util.function.IntConsumer setter, BlockState state) {
-        if (currentRange <= 0) return;
-        SpawnerKey key = new SpawnerKey(record.id(), block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
-        originalSpawnerRanges.putIfAbsent(key, currentRange);
-        setter.accept(0);
-        state.update(true, false);
-    }
-
-    private void restoreSpawnerRanges(LoaderRecord record) {
-        for (Map.Entry<SpawnerKey, Integer> entry : new ArrayList<>(originalSpawnerRanges.entrySet())) {
-            SpawnerKey key = entry.getKey();
-            if (!key.loaderId().equals(record.id())) continue;
-
-            World world = Bukkit.getWorld(key.worldId());
-            if (world != null) {
-                BlockState state = world.getBlockAt(key.x(), key.y(), key.z()).getState();
-                if (state instanceof CreatureSpawner spawner && spawner.getRequiredPlayerRange() <= 0) {
-                    spawner.setRequiredPlayerRange(entry.getValue());
-                    state.update(true, false);
-                } else if (state instanceof TrialSpawner spawner && spawner.getRequiredPlayerRange() <= 0) {
-                    spawner.setRequiredPlayerRange(entry.getValue());
-                    state.update(true, false);
-                }
-            }
-            originalSpawnerRanges.remove(key);
         }
     }
 
@@ -263,6 +205,4 @@ public final class ChunkColumnSimulationService {
         while (root.getCause() != null) root = root.getCause();
         return root.getClass().getSimpleName() + ": " + root.getMessage();
     }
-
-    private record SpawnerKey(UUID loaderId, UUID worldId, int x, int y, int z) {}
 }
