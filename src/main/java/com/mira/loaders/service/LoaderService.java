@@ -18,20 +18,28 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public final class LoaderService {
     private static final long HOUR_MILLIS = 3_600_000L;
 
     private final MiraLoadersPlugin plugin;
     private final Economy economy;
-    private final SimulationAnchorService simulation;
+    private final ChunkColumnSimulationService simulation;
     private final NamespacedKey loaderItemKey;
     private final File dataFile;
     private final Map<UUID, LoaderRecord> records = new LinkedHashMap<>();
     private final Set<UUID> ticketed = new HashSet<>();
 
-    public LoaderService(MiraLoadersPlugin plugin, Economy economy, SimulationAnchorService simulation) {
+    public LoaderService(MiraLoadersPlugin plugin, Economy economy, ChunkColumnSimulationService simulation) {
         this.plugin = plugin;
         this.economy = economy;
         this.simulation = simulation;
@@ -203,6 +211,7 @@ public final class LoaderService {
                 continue;
             }
             if (record.active(now)) ensureActive(record);
+            else simulation.remove(record); // cleans any stale force-load marker after an unclean stop
         }
         if (changed) save();
     }
@@ -216,8 +225,8 @@ public final class LoaderService {
             ticketed.add(record.id());
         }
 
-        // A chunk ticket alone only prevents unload. The simulation anchor is what
-        // makes vanilla behave as though a real player is standing at the loader.
+        // The chunk ticket/force-load supplies real chunk game logic. The column
+        // simulator removes player-proximity gates without creating a fake player.
         simulation.ensure(record);
     }
 
