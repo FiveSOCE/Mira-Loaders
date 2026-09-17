@@ -52,17 +52,17 @@ jobs:
       - run: gradle clean build -PpaperApiVersion=1.21.11-R0.1-SNAPSHOT -PcompileJavaVersion=21 -PbytecodeJavaVersion=21 --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: MiraLoaders-0.1.0
-          path: build/libs/MiraLoaders-0.1.0.jar
+          name: MiraLoaders-0.1.1
+          path: build/libs/MiraLoaders-0.1.1.jar
           if-no-files-found: error
       - name: Publish release
         if: success() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.1.0"; JAR="build/libs/MiraLoaders-0.1.0.jar"
+          TAG="v0.1.1"; JAR="build/libs/MiraLoaders-0.1.1.jar"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$JAR" --clobber
           else
-            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraLoaders v0.1.0" --notes "Initial MiraLoaders release: paid physical beacon chunk loaders with persistent fuel, a 12-hour cap, Vault economy deposits, GUI management and Paper plugin chunk tickets."
+            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraLoaders v0.1.1" --notes "Hardens physical Mira Chunk Loaders against explosions and piston movement so loader removal stays GUI-controlled while preserving the v0.1.0 paid fuel and chunk-ticket behavior."
           fi
