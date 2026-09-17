@@ -4,6 +4,7 @@ import com.mira.loaders.command.LoaderCommand;
 import com.mira.loaders.gui.LoaderGui;
 import com.mira.loaders.listener.LoaderListener;
 import com.mira.loaders.service.LoaderService;
+import com.mira.loaders.service.SimulationAnchorService;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
@@ -16,6 +17,7 @@ public final class MiraLoadersPlugin extends JavaPlugin {
     private Economy economy;
     private LoaderService loaderService;
     private LoaderGui loaderGui;
+    private SimulationAnchorService simulationAnchors;
 
     @Override
     public void onEnable() {
@@ -29,12 +31,17 @@ public final class MiraLoadersPlugin extends JavaPlugin {
         }
 
         economy = registration.getProvider();
-        loaderService = new LoaderService(this, economy);
-        loaderService.load();
+        simulationAnchors = new SimulationAnchorService(this);
+        loaderService = new LoaderService(this, economy, simulationAnchors);
         loaderGui = new LoaderGui(this, loaderService);
 
+        // Register synthetic-player suppression before loading persisted active
+        // loaders, because load() can immediately recreate their simulation anchors.
+        getServer().getPluginManager().registerEvents(simulationAnchors, this);
         getServer().getPluginManager().registerEvents(loaderGui, this);
         getServer().getPluginManager().registerEvents(new LoaderListener(this, loaderService, loaderGui), this);
+
+        loaderService.load();
 
         LoaderCommand command = new LoaderCommand(this, loaderService);
         PluginCommand pluginCommand = getCommand("miraloader");
@@ -50,7 +57,7 @@ public final class MiraLoadersPlugin extends JavaPlugin {
         }, 20L, 20L);
 
         getLogger().info("MiraLoaders v" + getPluginMeta().getVersion() + " enabled with "
-                + loaderService.loaderCount() + " tracked loader(s).");
+                + loaderService.loaderCount() + " tracked loader(s). Full player simulation is enabled for fueled loaders.");
     }
 
     @Override
