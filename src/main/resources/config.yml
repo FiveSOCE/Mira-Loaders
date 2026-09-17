@@ -1,0 +1,14 @@
+fuel:
+  cost-per-hour: 150000.0
+  maximum-hours: 12
+
+loader:
+  one-per-chunk: true
+  item-name: "&b&lMira Chunk Loader"
+  item-lore:
+    - "&7Keeps the entire chunk loaded while fueled."
+    - "&7Fuel cost: &a$150,000 &7per hour"
+    - "&7Maximum stored time: &e12 hours"
+
+messages:
+  prefix: "&5&lMira &8>> &r"
