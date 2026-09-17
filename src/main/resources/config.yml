@@ -6,7 +6,8 @@ loader:
   one-per-chunk: true
   item-name: "&b&lMira Chunk Loader"
   item-lore:
-    - "&7Keeps the entire chunk loaded while fueled."
+    - "&7Keeps the entire chunk column active while fueled."
+    - "&7From minimum world height to maximum world height."
     - "&7Fuel cost: &a$150,000 &7per hour"
     - "&7Maximum stored time: &e12 hours"
 
