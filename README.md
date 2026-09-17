@@ -8,6 +8,10 @@ MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, k
 
 **v0.1.1** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
 
+## Download
+
+**[Download MiraLoaders v0.1.1](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.1.1/MiraLoaders-0.1.1.jar)**
+
 ## Requirements
 
 - Paper 1.21.11 through 26.2
