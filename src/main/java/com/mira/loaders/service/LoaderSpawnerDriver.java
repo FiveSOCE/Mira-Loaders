@@ -151,7 +151,7 @@ public final class LoaderSpawnerDriver {
                     location,
                     entityClass,
                     CreatureSpawnEvent.SpawnReason.SPAWNER,
-                    true,
+                    
                     living -> {
                         living.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
                         living.getPersistentDataContainer().set(worldKey, PersistentDataType.STRING, spawner.getWorld().getUID().toString());
