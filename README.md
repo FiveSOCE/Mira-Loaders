@@ -4,21 +4,37 @@ Paid physical full-column chunk loaders for the Mira Paper server suite.
 
 MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, keeps its **entire containing chunk column** active from the world's minimum build height to maximum build height. It does this without synthetic or fake players.
 
-## Current Release
+## Version-specific JAR downloads
 
-**v0.2.2** — compatible with Paper/Minecraft **1.21.11 through 26.2**.
+| Paper server | Java | JAR name | Download |
+| --- | --- | --- | --- |
+| **1.18.2** | Java 17 | `MiraLoaders_1.18.2.jar` | [Legacy development release](https://github.com/FiveSOCE/Mira-Loaders/releases/tag/dev-1.18.2) |
+| **1.21.11–26.2** | Java 21 baseline, Java 25 for Paper 26.2 | `MiraLoaders_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Loaders/releases/tag/compat-modern-1.21.11-26.2) |
 
-## Download
+The downloads are available after CI succeeds and publishes the named release assets. Compatibility with **1.19–1.21.10** is not yet certified, nor is full gameplay equivalence on 1.18.2. Do not install both variants simultaneously.
 
-**[Download MiraLoaders v0.2.2](https://github.com/FiveSOCE/Mira-Loaders/releases/download/v0.2.2/MiraLoaders-0.2.2.jar)**
+[Legacy source](https://github.com/FiveSOCE/Mira-Loaders/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Loaders) · [All releases](https://github.com/FiveSOCE/Mira-Loaders/releases)
 
-## Requirements
+## Dependencies and installation
 
-- Paper 1.21.11 through 26.2
-- Java 21 runtime for the production JAR
-- Vault
-- a Vault-compatible economy provider
-- MiraSpawners **v0.1.14+ recommended for managed/stacked Mira spawners**
+- **Required:** Paper and Java for the chosen JAR, **Vault** and a working Vault-compatible economy provider. Without Vault, MiraLoaders will not load.
+- **Optional:** MiraSpawners matching your Paper version. Use the legacy MiraSpawners JAR on 1.18.2 for managed and stacked spawner integration.
+- **Not required:** MiraCore. This plugin has its own runtime services.
+- **Install:** Back up `plugins/MiraLoaders/`, remove older MiraLoaders JARs, install the correct build and restart.
+
+## Permissions and commands
+
+| Permission | Default | Purpose |
+| --- | --- | --- |
+| `miraloaders.admin` | OP | Admin give, reload and owner bypass |
+
+| Command | Permission | Description |
+| --- | --- | --- |
+| `/mloader give <player> [amount]` | `miraloaders.admin` | Give a physical loader Beacon |
+| `/mloader reload` | `miraloaders.admin` | Reload settings |
+| `/mloader help` | `miraloaders.admin` | Admin help |
+
+Aliases: `/miraloader` and `/loaders`.
 
 ## Loader Item
 
