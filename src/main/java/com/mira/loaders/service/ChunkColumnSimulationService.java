@@ -108,13 +108,13 @@ public final class ChunkColumnSimulationService {
     }
 
     private void verifyEntityTicking(LoaderRecord record, Chunk chunk) {
-        if (chunk.getLoadLevel() == Chunk.LoadLevel.ENTITY_TICKING) {
+        if (chunk.isEntitiesLoaded()) {
             warnedLoadLevel.remove(record.id());
             return;
         }
         if (warnedLoadLevel.add(record.id())) {
             plugin.getLogger().warning("Loader " + record.id() + " chunk " + record.chunkX() + "," + record.chunkZ()
-                    + " is currently " + chunk.getLoadLevel() + " instead of ENTITY_TICKING; MiraLoaders will keep the"
+                    + " is currently " + (chunk.isEntitiesLoaded() ? "entities-loaded" : "entities-not-loaded") + "; MiraLoaders will keep the"
                     + " ticket/force-load applied and continue enforcing column simulation.");
         }
     }
