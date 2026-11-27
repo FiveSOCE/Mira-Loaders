@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.mira"
-version = "0.2.3"
+version = "0.2.3-1.18.2"
 
 repositories {
     mavenCentral()
@@ -11,9 +11,9 @@ repositories {
     maven("https://jitpack.io")
 }
 
-val paperApiVersion = providers.gradleProperty("paperApiVersion").orElse("1.21.11-R0.1-SNAPSHOT")
-val compileJavaVersion = providers.gradleProperty("compileJavaVersion").map(String::toInt).orElse(21)
-val bytecodeJavaVersion = providers.gradleProperty("bytecodeJavaVersion").map(String::toInt).orElse(21)
+val paperApiVersion = providers.gradleProperty("paperApiVersion").orElse("1.18.2-R0.1-SNAPSHOT")
+val compileJavaVersion = providers.gradleProperty("compileJavaVersion").map(String::toInt).orElse(17)
+val bytecodeJavaVersion = providers.gradleProperty("bytecodeJavaVersion").map(String::toInt).orElse(17)
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
@@ -32,5 +32,5 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
-    archiveBaseName.set("MiraLoaders")
+    archiveFileName.set("MiraLoaders_1.18.2.jar")
 }
