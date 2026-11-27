@@ -1,0 +1,43 @@
+name: MiraLoaders Paper 1.18.2
+on:
+  push:
+    branches: ['compat/1.18.2']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  legacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+      - name: Compile and test
+        run: gradle clean build --no-daemon --stacktrace
+      - name: Verify legacy JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR=build/libs/MiraLoaders_1.18.2.jar
+          test -s "$JAR"
+          jar tf "$JAR" | grep -Fx plugin.yml
+          jar tf "$JAR" | grep -Fx com/mira/loaders/MiraLoadersPlugin.class
+          javap -verbose -classpath "$JAR" com.mira.loaders.MiraLoadersPlugin | grep -F 'major version: 61'
+          unzip -p "$JAR" plugin.yml | grep -F "api-version: '1.18'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiraLoaders_1.18.2
+          path: build/libs/MiraLoaders_1.18.2.jar
+          if-no-files-found: error
+      - name: Publish development JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view dev-1.18.2 >/dev/null 2>&1 || gh release create dev-1.18.2 --prerelease --title 'MiraLoaders for Paper 1.18.2' --notes 'Requires Vault, a compatible economy provider, and Java 17; MiraSpawners is optional. In-game checks pending.' --target "$GITHUB_SHA"
+          gh release upload dev-1.18.2 build/libs/MiraLoaders_1.18.2.jar --clobber
