@@ -58,7 +58,7 @@ public final class MiraLoadersPlugin extends JavaPlugin {
             loaderGui.refreshOpenGuis();
         }, 20L, 20L);
 
-        getLogger().info("MiraLoaders v" + getPluginMeta().getVersion() + " enabled with "
+        getLogger().info("MiraLoaders v" + getDescription().getVersion() + " enabled with "
                 + loaderService.loaderCount() + " tracked loader(s). Full chunk-column simulation is enabled; no fake players are used.");
     }
 
