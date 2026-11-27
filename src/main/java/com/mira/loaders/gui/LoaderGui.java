@@ -103,7 +103,7 @@ public final class LoaderGui implements Listener {
         long remaining = service.remainingMillis(record);
         boolean active = remaining > 0L;
 
-        inventory.setItem(TIMER_SLOT, item(active ? Material.CLOCK : Material.RECOVERY_COMPASS,
+        inventory.setItem(TIMER_SLOT, item(active ? Material.CLOCK : Material.COMPASS,
                 active ? "&a&lLoader Active" : "&c&lLoader Inactive",
                 List.of(
                         "&7Time remaining: &f" + service.formatRemaining(record),
