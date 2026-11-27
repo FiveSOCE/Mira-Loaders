@@ -8,10 +8,10 @@ MiraLoaders provides an admin-issued Beacon item that, once placed and fueled, k
 
 | Paper server | Java | JAR name | Download |
 | --- | --- | --- | --- |
-| **1.18.2** | Java 17 | `MiraLoaders_1.18.2.jar` | [Legacy development release](https://github.com/FiveSOCE/Mira-Loaders/releases/tag/dev-1.18.2) |
-| **1.21.11–26.2** | Java 21 baseline, Java 25 for Paper 26.2 | `MiraLoaders_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Loaders/releases/tag/compat-modern-1.21.11-26.2) |
+| **1.18.2** | Java 17 | `MiraLoaders_1.18.2.jar` | [Download legacy JAR](https://github.com/FiveSOCE/Mira-Loaders/releases/download/dev-1.18.2/MiraLoaders_1.18.2.jar) |
+| **1.21.11–26.2** | Java 21 baseline, Java 25 for Paper 26.2 | `MiraLoaders_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Loaders/releases/download/compat-modern-1.21.11-26.2/MiraLoaders_1.21.11-26.2.jar) |
 
-The downloads are available after CI succeeds and publishes the named release assets. Compatibility with **1.19–1.21.10** is not yet certified, nor is full gameplay equivalence on 1.18.2. Do not install both variants simultaneously.
+Both GitHub CI builds succeeded and the named release assets were verified. Compatibility with **1.19–1.21.10** is not yet certified, nor is full gameplay equivalence on 1.18.2. Do not install both variants simultaneously.
 
 [Legacy source](https://github.com/FiveSOCE/Mira-Loaders/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Loaders) · [All releases](https://github.com/FiveSOCE/Mira-Loaders/releases)
 
