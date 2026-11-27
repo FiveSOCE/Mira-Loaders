@@ -32,5 +32,5 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
-    archiveBaseName.set("MiraLoaders")
+    archiveFileName.set("MiraLoaders_1.21.11-26.2.jar")
 }
